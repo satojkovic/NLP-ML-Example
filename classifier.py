@@ -55,7 +55,7 @@ if __name__ == '__main__':
     print list(filtered_out), '\n'
 
     print "Vocabulary after filtering..."
-    print dct.token2id.keys(), "(%d vocabs)" % len(dct.token2id.keys()), '\n'
+    print dct.token2id.keys(), "(%d words)" % len(dct.token2id.keys()), '\n'
 
     print "Save Dictionary..."
     dct_txt = "id2word.txt"
