@@ -1,4 +1,4 @@
 NLP-ML-Example
 ==============
-2クラスの文書分類.
-scikit-learnとgensimを利用.
+Two class document classification with scikit-learn and gensim.
+
