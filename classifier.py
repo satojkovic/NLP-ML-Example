@@ -1,11 +1,8 @@
-#-*- encoding: utf-8 -*-
-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 Reference: https://github.com/Scripted/NLP-Tutorial
 """
-
-#! /usr/bin/env python
-
 
 from math import sqrt
 import gensim
@@ -18,13 +15,13 @@ import re
 
 
 def vec2dense(vec, num_terms):
-
     '''Convert from sparse gensim format to dense list of numbers'''
     return list(gensim.matutils.corpus2dense([vec], num_terms=num_terms).T[0])
 
+
 if __name__ == '__main__':
 
-    # コーパスのロード, 改行の除去, 小文字に統一
+    # Loding a corpus, remove the line break, convert to lower case
     docs = {}
     corpus_dir = 'corpus'
     for filename in os.listdir(corpus_dir):
@@ -34,7 +31,7 @@ if __name__ == '__main__':
 
     names = docs.keys()
 
-    # ストップワードの除去, ステミング
+    # Stopwords removal and Stemming
     print "\n---Corpus with Stopwords Removed---"
 
     preprocessed_docs = {}
@@ -43,8 +40,8 @@ if __name__ == '__main__':
         preprocessed_docs[name] = preprocessed
         print name, ":", preprocessed
 
-    # 辞書を作成
-    # 低頻度と高頻度のワードは除く
+    # Create a dictionary
+    # except for a very high and low frequent word
     dct = gensim.corpora.Dictionary(preprocessed_docs.values())
     unfiltered = dct.token2id.keys()
     dct.filter_extremes(no_below=3, no_above=0.6)
@@ -62,8 +59,7 @@ if __name__ == '__main__':
     dct.save_as_text(dct_txt)
     print "  saved to %s\n" % dct_txt
 
-    # Bag of Words Vectorsの作成
-    # ストップワード除去とステミング処理した文書に対して, 辞書のワードをカウント
+    # Bag of Words Vectors
     print "---Bag of Words Corpus---"
 
     bow_docs = {}
@@ -76,17 +72,19 @@ if __name__ == '__main__':
         print name, ":", dense
         bow_docs_all_zeros[name] = all(d == 0 for d in dense)
 
-    print "\nall zeros...\n", [name for name in bow_docs_all_zeros
-                               if bow_docs_all_zeros[name]]
+    print "\nall zeros...\n", [
+        name for name in bow_docs_all_zeros if bow_docs_all_zeros[name]
+    ]
 
-    # LSIにより次元削減
+    # Dimension reduction with LSI model
     print "\n---LSI Model---"
 
     lsi_docs = {}
     num_topics = 2
-    lsi_model = gensim.models.LsiModel(bow_docs.values(),
-                                       id2word=dct.load_from_text('id2word.txt'),
-                                       num_topics=num_topics)
+    lsi_model = gensim.models.LsiModel(
+        bow_docs.values(),
+        id2word=dct.load_from_text('id2word.txt'),
+        num_topics=num_topics)
 
     for name in names:
 
@@ -99,38 +97,38 @@ if __name__ == '__main__':
     print "\nTopics"
     print lsi_model.print_topics()
 
-    # 次元削減後のベクトルを正規化(ベクトルの方向が重要)
+    # Normalize a vector
     print "\n---Unit Vectorization---"
 
     unit_vecs = {}
     for name in names:
 
         vec = vec2dense(lsi_docs[name], num_topics)
-        norm = sqrt(sum(num ** 2 for num in vec))
+        norm = sqrt(sum(num**2 for num in vec))
         unit_vec = [num / norm for num in vec]
         unit_vecs[name] = unit_vec
         print name, ":", unit_vec
 
-    # 2クラス分類
+    # Binary classification
     print "\n---Classification---\n"
 
     all_data = [unit_vecs[name] for name in names if re.match("ipad", name)]
-    all_data.extend([unit_vecs[name] for name in names
-                     if re.match("sochi", name)])
+    all_data.extend(
+        [unit_vecs[name] for name in names if re.match("sochi", name)])
 
     all_labels = [1 for name in names if re.match("ipad", name)]
     all_labels.extend([2 for name in names if re.match("sochi", name)])
 
-    train_data, test_data, train_label, test_label = train_test_split(all_data,
-                                                                      all_labels)
+    train_data, test_data, train_label, test_label = train_test_split(
+        all_data, all_labels)
 
-    # SVMの学習
+    # Train SVM classifier
     classifier = SVC()
     classifier.fit(train_data, train_label)
 
-    # 予測
+    # Prediction
     predict_label = classifier.predict(test_data)
 
     target_names = ["class 'ipad'", "class 'sochi'"]
-    print classification_report(test_label, predict_label,
-                                target_names=target_names)
+    print classification_report(
+        test_label, predict_label, target_names=target_names)
